@@ -22,6 +22,8 @@ import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 
+import com.xuexiang.tensorflowdemo.core.tflite.Recognition;
+
 import org.tensorflow.lite.Interpreter;
 
 import java.io.BufferedReader;
@@ -159,7 +161,7 @@ public class TensorFlowImageClassifier implements Classifier {
             if (confidence > THRESHOLD) {
                 pq.add(new Recognition("" + i,
                         labelList.size() > i ? labelList.get(i) : "unknown",
-                        confidence, quantized));
+                        confidence));
             }
         }
 
@@ -185,7 +187,7 @@ public class TensorFlowImageClassifier implements Classifier {
             if (confidence > THRESHOLD) {
                 pq.add(new Recognition("" + i,
                         labelList.size() > i ? labelList.get(i) : "unknown",
-                        confidence, quantized));
+                        confidence));
             }
         }
 

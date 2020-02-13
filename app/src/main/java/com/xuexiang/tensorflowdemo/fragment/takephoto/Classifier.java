@@ -19,6 +19,8 @@ package com.xuexiang.tensorflowdemo.fragment.takephoto;
 
 import android.graphics.Bitmap;
 
+import com.xuexiang.tensorflowdemo.core.tflite.Recognition;
+
 import java.util.List;
 
 /**
@@ -26,68 +28,6 @@ import java.util.List;
  * @since 2020-02-12 12:54
  */
 public interface Classifier {
-
-    class Recognition {
-        /**
-         * A unique identifier for what has been recognized. Specific to the class, not the instance of
-         * the object.
-         */
-        private final String id;
-
-        /**
-         * 识别名
-         */
-        private final String title;
-
-        /**
-         * 模型是否具有量化权重或浮动权重。
-         */
-        private final boolean quantized;
-
-        /**
-         * 可信度
-         */
-        private final Float confidence;
-
-        public Recognition(final String id, final String title, final Float confidence, final boolean quantized) {
-            this.id = id;
-            this.title = title;
-            this.confidence = confidence;
-            this.quantized = quantized;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public Float getConfidence() {
-            return confidence;
-        }
-
-        @Override
-        public String toString() {
-            String resultString = "";
-            if (id != null) {
-                resultString += "[" + id + "] ";
-            }
-
-            if (title != null) {
-                resultString += title + " ";
-            }
-
-            if (confidence != null) {
-                resultString += String.format("(%.1f%%) ", confidence * 100.0f);
-            }
-
-            return resultString.trim();
-        }
-    }
-
-
     /**
      * 识别图片
      *

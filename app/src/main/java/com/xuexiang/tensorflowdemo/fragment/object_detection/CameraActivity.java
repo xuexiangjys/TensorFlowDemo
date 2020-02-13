@@ -15,7 +15,7 @@
  *
  */
 
-package com.xuexiang.tensorflowdemo.fragment.image_classification;
+package com.xuexiang.tensorflowdemo.fragment.object_detection;
 
 import android.Manifest;
 import android.content.Context;
@@ -38,36 +38,34 @@ import android.view.Surface;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.widget.AdapterView;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.UiThread;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.xuexiang.tensorflowdemo.R;
-import com.xuexiang.tensorflowdemo.core.tflite.Recognition;
 import com.xuexiang.tensorflowdemo.fragment.image_classification.camera.CameraConnectionFragment;
 import com.xuexiang.tensorflowdemo.fragment.image_classification.camera.LegacyCameraConnectionFragment;
-import com.xuexiang.tensorflowdemo.fragment.image_classification.tflite.Classifier;
 import com.xuexiang.tensorflowdemo.utils.ImageUtils;
-import com.xuexiang.tensorflowdemo.utils.XToastUtils;
 import com.xuexiang.xutil.common.logger.Logger;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
-public abstract class CameraActivity extends AppCompatActivity implements OnImageAvailableListener, Camera.PreviewCallback, View.OnClickListener, AdapterView.OnItemSelectedListener {
+public abstract class CameraActivity extends AppCompatActivity implements OnImageAvailableListener, Camera.PreviewCallback, CompoundButton.OnCheckedChangeListener, View.OnClickListener {
+
     private static final int PERMISSIONS_REQUEST = 1;
 
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     protected int previewWidth = 0;
     protected int previewHeight = 0;
+    private boolean debug = false;
     private Handler handler;
     private HandlerThread handlerThread;
     private boolean useCamera2API;
@@ -77,35 +75,21 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
     private int yRowStride;
     private Runnable postInferenceCallback;
     private Runnable imageConverter;
+
     private LinearLayout gestureLayout;
     private BottomSheetBehavior sheetBehavior;
-    protected TextView recognitionTextView,
-            recognition1TextView,
-            recognition2TextView,
-            recognitionValueTextView,
-            recognition1ValueTextView,
-            recognition2ValueTextView;
-    protected TextView frameValueTextView,
-            cropValueTextView,
-            cameraResolutionTextView,
-            rotationTextView,
-            inferenceTimeTextView;
-    protected ImageView bottomSheetArrowImageView;
-    private ImageView plusImageView, minusImageView;
-    private Spinner modelSpinner;
-    private Spinner deviceSpinner;
-    private TextView threadsTextView;
 
-    private Classifier.Model model = Classifier.Model.QUANTIZED;
-    private Classifier.Device device = Classifier.Device.CPU;
-    private int numThreads = -1;
+    protected TextView frameValueTextView, cropValueTextView, inferenceTimeTextView;
+    protected ImageView bottomSheetArrowImageView;
+    private SwitchCompat apiSwitchCompat;
+    private TextView threadsTextView;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.activity_image_classifier);
 
+        setContentView(R.layout.activity_object_detection);
         if (hasPermission()) {
             setFragment();
         } else {
@@ -113,10 +97,9 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
         }
 
         threadsTextView = findViewById(R.id.threads);
-        plusImageView = findViewById(R.id.plus);
-        minusImageView = findViewById(R.id.minus);
-        modelSpinner = findViewById(R.id.model_spinner);
-        deviceSpinner = findViewById(R.id.device_spinner);
+        ImageView plusImageView = findViewById(R.id.plus);
+        ImageView minusImageView = findViewById(R.id.minus);
+        apiSwitchCompat = findViewById(R.id.api_info_switch);
         LinearLayout bottomSheetLayout = findViewById(R.id.bottom_sheet_layout);
         gestureLayout = findViewById(R.id.gesture_layout);
         sheetBehavior = BottomSheetBehavior.from(bottomSheetLayout);
@@ -132,9 +115,7 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
                         } else {
                             gestureLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                         }
-                        //                int width = bottomSheetLayout.getMeasuredWidth();
                         int height = gestureLayout.getMeasuredHeight();
-
                         sheetBehavior.setPeekHeight(height);
                     }
                 });
@@ -166,28 +147,14 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
                     }
                 });
 
-        recognitionTextView = findViewById(R.id.detected_item);
-        recognitionValueTextView = findViewById(R.id.detected_item_value);
-        recognition1TextView = findViewById(R.id.detected_item1);
-        recognition1ValueTextView = findViewById(R.id.detected_item1_value);
-        recognition2TextView = findViewById(R.id.detected_item2);
-        recognition2ValueTextView = findViewById(R.id.detected_item2_value);
-
         frameValueTextView = findViewById(R.id.frame_info);
         cropValueTextView = findViewById(R.id.crop_info);
-        cameraResolutionTextView = findViewById(R.id.view_info);
-        rotationTextView = findViewById(R.id.rotation_info);
         inferenceTimeTextView = findViewById(R.id.inference_info);
 
-        modelSpinner.setOnItemSelectedListener(this);
-        deviceSpinner.setOnItemSelectedListener(this);
+        apiSwitchCompat.setOnCheckedChangeListener(this);
 
         plusImageView.setOnClickListener(this);
         minusImageView.setOnClickListener(this);
-
-        model = Classifier.Model.valueOf(modelSpinner.getSelectedItem().toString().toUpperCase());
-        device = Classifier.Device.valueOf(deviceSpinner.getSelectedItem().toString());
-        numThreads = Integer.parseInt(threadsTextView.getText().toString().trim());
     }
 
     protected int[] getRgbBytes() {
@@ -232,20 +199,12 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
         yRowStride = previewWidth;
 
         imageConverter =
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        ImageUtils.convertYUV420SPToARGB8888(bytes, previewWidth, previewHeight, rgbBytes);
-                    }
-                };
+                () -> ImageUtils.convertYUV420SPToARGB8888(bytes, previewWidth, previewHeight, rgbBytes);
 
         postInferenceCallback =
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        camera.addCallbackBuffer(bytes);
-                        isProcessingFrame = false;
-                    }
+                () -> {
+                    camera.addCallbackBuffer(bytes);
+                    isProcessingFrame = false;
                 };
         processImage();
     }
@@ -301,7 +260,6 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
             processImage();
         } catch (final Exception e) {
             Logger.e("Exception!", e);
-            return;
         }
     }
 
@@ -381,7 +339,11 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
     private void requestPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (shouldShowRequestPermissionRationale(PERMISSION_CAMERA)) {
-                XToastUtils.toast("Camera permission is required for this demo");
+                Toast.makeText(
+                        CameraActivity.this,
+                        "Camera permission is required for this demo",
+                        Toast.LENGTH_LONG)
+                        .show();
             }
             requestPermissions(new String[]{PERMISSION_CAMERA}, PERMISSIONS_REQUEST);
         }
@@ -416,10 +378,6 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
                 if (map == null) {
                     continue;
                 }
-
-                // Fallback to camera1 API for internal cameras that don't have full support.
-                // This should help with legacy situations where using the camera2 API causes
-                // distorted or otherwise broken previews.
                 useCamera2API =
                         (facing == CameraCharacteristics.LENS_FACING_EXTERNAL)
                                 || isHardwareLevelSupported(
@@ -473,6 +431,10 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
         }
     }
 
+    public boolean isDebug() {
+        return debug;
+    }
+
     protected void readyForNextImage() {
         if (postInferenceCallback != null) {
             postInferenceCallback.run();
@@ -492,41 +454,36 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
         }
     }
 
-    @UiThread
-    protected void showResultsInBottomSheet(List<Recognition> results) {
-        if (results != null && results.size() >= 3) {
-            Recognition recognition = results.get(0);
-            if (recognition != null) {
-                if (recognition.getTitle() != null) {
-                    recognitionTextView.setText(recognition.getTitle());
-                }
-                if (recognition.getConfidence() != null) {
-                    recognitionValueTextView.setText(
-                            String.format("%.2f", (100 * recognition.getConfidence())) + "%");
-                }
-            }
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        setUseNNAPI(isChecked);
+        if (isChecked) {
+            apiSwitchCompat.setText("NNAPI");
+        } else {
+            apiSwitchCompat.setText("TFLITE");
+        }
+    }
 
-            Recognition recognition1 = results.get(1);
-            if (recognition1 != null) {
-                if (recognition1.getTitle() != null) {
-                    recognition1TextView.setText(recognition1.getTitle());
-                }
-                if (recognition1.getConfidence() != null) {
-                    recognition1ValueTextView.setText(
-                            String.format("%.2f", (100 * recognition1.getConfidence())) + "%");
-                }
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.plus) {
+            String threads = threadsTextView.getText().toString().trim();
+            int numThreads = Integer.parseInt(threads);
+            if (numThreads >= 9) {
+                return;
             }
-
-            Recognition recognition2 = results.get(2);
-            if (recognition2 != null) {
-                if (recognition2.getTitle() != null) {
-                    recognition2TextView.setText(recognition2.getTitle());
-                }
-                if (recognition2.getConfidence() != null) {
-                    recognition2ValueTextView.setText(
-                            String.format("%.2f", (100 * recognition2.getConfidence())) + "%");
-                }
+            numThreads++;
+            threadsTextView.setText(String.valueOf(numThreads));
+            setNumThreads(numThreads);
+        } else if (v.getId() == R.id.minus) {
+            String threads = threadsTextView.getText().toString().trim();
+            int numThreads = Integer.parseInt(threads);
+            if (numThreads == 1) {
+                return;
             }
+            numThreads--;
+            threadsTextView.setText(String.valueOf(numThreads));
+            setNumThreads(numThreads);
         }
     }
 
@@ -538,56 +495,8 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
         cropValueTextView.setText(cropInfo);
     }
 
-    protected void showCameraResolution(String cameraInfo) {
-        cameraResolutionTextView.setText(cameraInfo);
-    }
-
-    protected void showRotationInfo(String rotation) {
-        rotationTextView.setText(rotation);
-    }
-
     protected void showInference(String inferenceTime) {
         inferenceTimeTextView.setText(inferenceTime);
-    }
-
-    protected Classifier.Model getModel() {
-        return model;
-    }
-
-    private void setModel(Classifier.Model model) {
-        if (this.model != model) {
-            Logger.d("Updating  model: " + model);
-            this.model = model;
-            onInferenceConfigurationChanged();
-        }
-    }
-
-    protected Classifier.Device getDevice() {
-        return device;
-    }
-
-    private void setDevice(Classifier.Device device) {
-        if (this.device != device) {
-            Logger.d("Updating  device: " + device);
-            this.device = device;
-            final boolean threadsEnabled = device == Classifier.Device.CPU;
-            plusImageView.setEnabled(threadsEnabled);
-            minusImageView.setEnabled(threadsEnabled);
-            threadsTextView.setText(threadsEnabled ? String.valueOf(numThreads) : "N/A");
-            onInferenceConfigurationChanged();
-        }
-    }
-
-    protected int getNumThreads() {
-        return numThreads;
-    }
-
-    private void setNumThreads(int numThreads) {
-        if (this.numThreads != numThreads) {
-            Logger.d("Updating  numThreads: " + numThreads);
-            this.numThreads = numThreads;
-            onInferenceConfigurationChanged();
-        }
     }
 
     protected abstract void processImage();
@@ -598,40 +507,7 @@ public abstract class CameraActivity extends AppCompatActivity implements OnImag
 
     protected abstract Size getDesiredPreviewFrameSize();
 
-    protected abstract void onInferenceConfigurationChanged();
+    protected abstract void setNumThreads(int numThreads);
 
-    @Override
-    public void onClick(View v) {
-        if (v.getId() == R.id.plus) {
-            String threads = threadsTextView.getText().toString().trim();
-            int numThreads = Integer.parseInt(threads);
-            if (numThreads >= 9) {
-                return;
-            }
-            setNumThreads(++numThreads);
-            threadsTextView.setText(String.valueOf(numThreads));
-        } else if (v.getId() == R.id.minus) {
-            String threads = threadsTextView.getText().toString().trim();
-            int numThreads = Integer.parseInt(threads);
-            if (numThreads == 1) {
-                return;
-            }
-            setNumThreads(--numThreads);
-            threadsTextView.setText(String.valueOf(numThreads));
-        }
-    }
-
-    @Override
-    public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-        if (parent == modelSpinner) {
-            setModel(Classifier.Model.valueOf(parent.getItemAtPosition(pos).toString().toUpperCase()));
-        } else if (parent == deviceSpinner) {
-            setDevice(Classifier.Device.valueOf(parent.getItemAtPosition(pos).toString()));
-        }
-    }
-
-    @Override
-    public void onNothingSelected(AdapterView<?> parent) {
-        // Do nothing.
-    }
+    protected abstract void setUseNNAPI(boolean isChecked);
 }

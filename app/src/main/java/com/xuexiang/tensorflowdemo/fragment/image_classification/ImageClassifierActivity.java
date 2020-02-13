@@ -26,6 +26,7 @@ import android.util.Size;
 import android.util.TypedValue;
 
 import com.xuexiang.tensorflowdemo.R;
+import com.xuexiang.tensorflowdemo.core.tflite.Recognition;
 import com.xuexiang.tensorflowdemo.fragment.image_classification.tflite.Classifier;
 import com.xuexiang.tensorflowdemo.utils.BorderedText;
 import com.xuexiang.tensorflowdemo.utils.XToastUtils;
@@ -97,7 +98,7 @@ public class ImageClassifierActivity extends CameraActivity implements OnImageAv
                 () -> {
                     if (classifier != null) {
                         final long startTime = SystemClock.uptimeMillis();
-                        final List<Classifier.Recognition> results =
+                        final List<Recognition> results =
                                 classifier.recognizeImage(rgbFrameBitmap, sensorOrientation);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
                         Logger.v(String.format("Detect: %s", results));

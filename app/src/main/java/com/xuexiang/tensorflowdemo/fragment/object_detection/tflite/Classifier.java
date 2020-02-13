@@ -15,18 +15,24 @@
  *
  */
 
-package com.xuexiang.tensorflowdemo.widget;
+package com.xuexiang.tensorflowdemo.fragment.object_detection.tflite;
+
+import android.graphics.Bitmap;
 
 import com.xuexiang.tensorflowdemo.core.tflite.Recognition;
 
 import java.util.List;
 
-public interface ResultsView {
+/**
+ * Generic interface for interacting with different recognition engines.
+ */
+public interface Classifier {
 
-    /**
-     * 设置识别结果
-     *
-     * @param results
-     */
-    void setResults(final List<Recognition> results);
+    List<Recognition> recognizeImage(Bitmap bitmap);
+
+    void close();
+
+    void setNumThreads(int num_threads);
+
+    void setUseNNAPI(boolean isChecked);
 }

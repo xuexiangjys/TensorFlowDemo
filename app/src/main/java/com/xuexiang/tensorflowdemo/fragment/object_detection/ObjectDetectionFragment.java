@@ -17,9 +17,15 @@
 
 package com.xuexiang.tensorflowdemo.fragment.object_detection;
 
+import android.view.View;
+
 import com.xuexiang.tensorflowdemo.R;
 import com.xuexiang.tensorflowdemo.core.BaseFragment;
+import com.xuexiang.xaop.annotation.SingleClick;
 import com.xuexiang.xpage.annotation.Page;
+import com.xuexiang.xutil.app.ActivityUtils;
+
+import butterknife.OnClick;
 
 /**
  * @author xuexiang
@@ -35,5 +41,12 @@ public class ObjectDetectionFragment extends BaseFragment {
     @Override
     protected void initViews() {
 
+    }
+
+
+    @SingleClick
+    @OnClick(R.id.btn_start)
+    public void onViewClicked(View view) {
+        ActivityUtils.startActivity(ObjectDetectionActivity.class);
     }
 }

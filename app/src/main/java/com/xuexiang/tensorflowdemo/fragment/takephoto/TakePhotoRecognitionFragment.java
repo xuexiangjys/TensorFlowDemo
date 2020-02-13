@@ -31,6 +31,7 @@ import com.wonderkiln.camerakit.CameraKitVideo;
 import com.wonderkiln.camerakit.CameraView;
 import com.xuexiang.tensorflowdemo.R;
 import com.xuexiang.tensorflowdemo.core.BaseFragment;
+import com.xuexiang.tensorflowdemo.core.tflite.Recognition;
 import com.xuexiang.xaop.annotation.MainThread;
 import com.xuexiang.xpage.annotation.Page;
 
@@ -108,7 +109,7 @@ public class TakePhotoRecognitionFragment extends BaseFragment {
                 bitmap = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, false);
                 ivResult.setImageBitmap(bitmap);
                 long startNanos = System.nanoTime();
-                final List<Classifier.Recognition> results = mClassifier.recognizeImage(bitmap);
+                final List<Recognition> results = mClassifier.recognizeImage(bitmap);
                 long lengthMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
                 tvResult.setText(String.format("%s, Total: %dms", results.toString(), lengthMillis));
             }

@@ -14,23 +14,18 @@
   ~ limitations under the License.
   ~
   -->
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <com.xuexiang.tensorflowdemo.widget.AspectRatioTextureView
+        android:id="@+id/texture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <com.xuexiang.tensorflowdemo.widget.OverlayView
+        android:id="@+id/tracking_overlay"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:layout_height="match_parent" />
 
-        <Button
-            android:id="@+id/btn_start"
-            style="@style/Button.Blue"
-            android:text="开始检测" />
-
-    </LinearLayout>
-
-</LinearLayout>
+</FrameLayout>

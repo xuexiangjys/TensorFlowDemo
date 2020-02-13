@@ -14,23 +14,20 @@
   ~ limitations under the License.
   ~
   -->
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="#00000000">
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:background="@android:color/black" />
 
-        <Button
-            android:id="@+id/btn_start"
-            style="@style/Button.Blue"
-            android:text="开始检测" />
+    <include
+        android:id="@+id/bottom_sheet_layout"
+        layout="@layout/layout_object_detection_bottom_sheet" />
 
-    </LinearLayout>
 
-</LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
