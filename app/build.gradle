@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId "com.xuexiang.tensorflowdemo"
-        minSdkVersion 17
+        minSdkVersion 21
         targetSdkVersion build_versions.target_sdk
         versionCode 1
         versionName "1.0"
@@ -98,6 +98,9 @@ dependencies {
 
     implementation 'com.wonderkiln:camerakit:0.13.1'
     implementation 'org.tensorflow:tensorflow-lite:2.1.0'
+
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.0.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
 
 
     implementation deps.androidx.multidex

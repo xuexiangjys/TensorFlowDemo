@@ -20,6 +20,10 @@ package com.xuexiang.tensorflowdemo.fragment;
 import android.view.KeyEvent;
 
 import com.xuexiang.tensorflowdemo.core.BaseContainerFragment;
+import com.xuexiang.tensorflowdemo.fragment.gesture_recognition.GestureRecognitionFragment;
+import com.xuexiang.tensorflowdemo.fragment.image_classification.ImageClassificationFragment;
+import com.xuexiang.tensorflowdemo.fragment.object_detection.ObjectDetectionFragment;
+import com.xuexiang.tensorflowdemo.fragment.takephoto.TakePhotoRecognitionFragment;
 import com.xuexiang.tensorflowdemo.utils.XToastUtils;
 import com.xuexiang.xpage.annotation.Page;
 import com.xuexiang.xpage.enums.CoreAnim;
@@ -38,7 +42,10 @@ public class MainFragment extends BaseContainerFragment implements ClickUtils.On
     protected Class[] getPagesClasses() {
         return new Class[] {
                 //此处填写fragment
-                RecognitionClassifierFragment.class
+                TakePhotoRecognitionFragment.class,
+                ImageClassificationFragment.class,
+                ObjectDetectionFragment.class,
+                GestureRecognitionFragment.class
         };
     }
 
